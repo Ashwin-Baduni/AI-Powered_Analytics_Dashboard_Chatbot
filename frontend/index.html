@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat Interface</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .data-table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+      }
+      .data-table th,
+      .data-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: right;
+      }
+      .data-table th {
+        background-color: #f0f9ff;
+        font-weight: 600;
+      }
+      .data-table tr:nth-child(even) {
+        background-color: #f8fafc;
+      }
+
+      /* NEW IMPROVED ANIMATION KEYFRAMES */
+      @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(0.95); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
+      }
+
+      @keyframes dash {
+        0% { stroke-dashoffset: 283; }
+        50% { stroke-dashoffset: 141; }
+        100% { stroke-dashoffset: 283; }
+      }
+
+      @keyframes colorShift {
+        0% { stroke: #3b82f6; }
+        25% { stroke: #8b5cf6; }
+        50% { stroke: #6366f1; }
+        75% { stroke: #4f46e5; }
+        100% { stroke: #3b82f6; }
+      }
+
+      @keyframes dotFlash {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+
+      .thinking-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+      }
+
+      .circle-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform-origin: center;
+        animation: rotate 4s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      }
+
+      .circle-outer {
+        fill: none;
+        stroke-width: 8px;
+        stroke-linecap: round;
+        stroke-dasharray: 283;
+        animation: dash 3s ease-in-out infinite, colorShift 12s linear infinite;
+      }
+
+      .circle-inner {
+        fill: none;
+        stroke: #3b82f6;
+        stroke-width: 4px;
+        stroke-linecap: round;
+        stroke-dasharray: 188;
+        stroke-dashoffset: 94;
+        opacity: 0.7;
+        animation: rotate 3s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite reverse;
+        transform-origin: center;
+      }
+
+      .thinking-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgb(0, 0, 0);
+        font-weight: 700;
+        font-size: 1.09rem;
+        text-align: center;
+        width: 100%;
+        letter-spacing: 0.5px;
+        animation: pulse 2s ease-in-out infinite;
+        text-shadow: 0 0 10px rgb(255, 255, 255);
+      }
+
+      .dots {
+        display: inline-block;
+      }
+      
+      .dot {
+        display: inline-block;
+        animation: dotFlash 1.5s infinite;
+      }
+      
+      .dot:nth-child(1) { animation-delay: 0s; }
+      .dot:nth-child(2) { animation-delay: 0.3s; }
+      .dot:nth-child(3) { animation-delay: 0.6s; }
+
+      /* CAPTCHA STYLES */
+      .captcha-container {
+        background-color: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .captcha-canvas {
+        background-color: #f0f7ff;
+        border: 1px solid #ccc;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+      }
+
+      .captcha-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .captcha-input {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen">
+    <div id="scene" class="fixed inset-0 z-0"></div>
+
+    <div class="container mx-auto px-4 py-8 relative z-10">
+      <div
+        class="max-w-4xl mx-auto bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/20"
+      >
+        <div
+          class="chat-container h-96 overflow-y-auto mb-4 space-y-4"
+          id="chatMessages"
+        >
+          <div class="text-center text-gray-500 animate-pulse">
+            <div class="animate-float">✨ Start chatting with AI</div>
+          </div>
+        </div>
+
+        <!-- Data visualization area -->
+        <div
+          id="dataVisual"
+          class="hidden mb-6 p-4 bg-white/90 rounded-2xl shadow-md"
+        >
+          <h3 class="text-lg font-semibold mb-2 text-blue-800">
+            Data Visualization
+          </h3>
+          <canvas id="dataChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- CAPTCHA Container -->
+        <div id="captchaContainer" class="hidden mb-6">
+          <div class="captcha-container">
+            <h3 class="text-lg font-semibold mb-2 text-blue-800">Verify You're Human</h3>
+            <p class="text-sm text-gray-600 mb-4">Please enter the text you see in the image below:</p>
+            <canvas id="captchaCanvas" class="captcha-canvas" width="300" height="80"></canvas>
+            <div class="captcha-controls">
+              <input type="text" id="captchaInput" class="captcha-input" placeholder="Enter captcha text">
+              <button onclick="refreshCaptcha()" class="p-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            <button onclick="verifyCaptcha()" class="w-full py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-semibold">
+              Verify & Continue
+            </button>
+          </div>
+        </div>
+
+        <div id="inputContainer" class="flex gap-2">
+          <input
+            type="text"
+            id="messageInput"
+            class="flex-1 p-4 rounded-xl border-0 bg-white/80 backdrop-blur-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all duration-300 hover:shadow-xl font-medium"
+            placeholder="Type your message..."
+            style="font-family: 'Inter', sans-serif"
+          />
+          <button
+            onclick="sendMessage()"
+            class="px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl font-semibold"
+          >
+            Send ➤
+          </button>
+        </div>
+        <div id="thinkingContainer" class="hidden flex items-center justify-center py-6">
+          <div class="thinking-container">
+            <svg class="circle-svg" viewBox="0 0 100 100">
+              <circle class="circle-outer" cx="50" cy="50" r="45" />
+              <circle class="circle-inner" cx="50" cy="50" r="30" />
+            </svg>
+            <div class="thinking-content">
+              Computing
+              <div class="dots">
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:8000/chat";
+      let chatHistory = [];
+      let dataChart = null;
+      let questionCount = 0;
+      let captchaText = "";
+
+      // Initialize chat with welcome message on page load
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              message: "",
+              history: []
+            }),
+          });
+
+          if (!response.ok) throw new Error("Welcome message failed");
+          
+          const data = await response.json();
+          appendMessage("assistant", data.response);
+          chatHistory.push({ role: "assistant", content: data.response });
+          
+          // Remove initial placeholder message
+          document.querySelector('.text-center.text-gray-500').remove();
+        } catch (error) {
+          console.error('Welcome message error:', error);
+        }
+      });
+
+  async function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const message = input.value.trim();
+  if (!message) return;
+
+  // Store the message and clear input
+  const userMessage = message;
+  input.value = "";
+  
+  // Display user message
+  appendMessage("user", userMessage);
+  
+  // Process the message normally
+  await processMessage(userMessage);
+  
+  // After processing, increment question count
+  questionCount++;
+
+  // Check if we need to show the CAPTCHA after response is received
+  if (questionCount % 4 === 0) {
+    // Wait a brief moment for the user to see the response before showing CAPTCHA
+    setTimeout(() => {
+      // Add a message explaining the CAPTCHA
+      appendMessage("assistant", "Please verify you're human before continuing the conversation.");
+      
+      // Hide input and show CAPTCHA
+      document.getElementById('inputContainer').classList.add('hidden');
+      showCaptcha();
+    }, 2000);
+  }
+}
+
+async function processMessage(message) {
+  // Show thinking animation and hide input
+  document.getElementById('inputContainer').classList.add('hidden');
+  document.getElementById('thinkingContainer').classList.remove('hidden');
+  
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        message: message,
+        history: chatHistory,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "API error");
+    }
+
+    const data = await response.json();
+
+    // Only restore input container if we're not showing a CAPTCHA next
+    if (questionCount % 4 !== 3) { // Check if next message will trigger CAPTCHA
+      document.getElementById('inputContainer').classList.remove('hidden');
+    }
+    document.getElementById('thinkingContainer').classList.add('hidden');
+    
+    appendMessage("assistant", data.response);
+    chatHistory.push(
+      { role: "user", content: message },
+      { role: "assistant", content: data.response }
+    );
+
+    // Process any data for visualization
+    processDataForVisualization(message, data.response);
+  } catch (error) {
+    console.error("API Error:", error);
+    // Restore input and hide thinking animation
+    document.getElementById('inputContainer').classList.remove('hidden');
+    document.getElementById('thinkingContainer').classList.add('hidden');
+    appendMessage("error", `Failed: ${error.message}`);
+  }
+}
+
+      function appendMessage(role, content) {
+  const container = document.getElementById("chatMessages");
+  const messageEl = document.createElement("div");
+  
+  // Base class for all messages
+  let baseClass = `p-4 rounded-xl max-w-[80%] transform transition-all duration-300 ${
+    role === "user"
+      ? "ml-auto bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+      : role === "error"
+      ? "bg-red-100 border-2 border-red-500"
+      : "bg-gradient-to-br from-gray-100 to-blue-50 shadow-md"
+  } ${role === "user" ? "hover:-translate-y-1" : "hover:-translate-x-1"}`;
+  
+  // Check for special messages that need custom styling
+  if (content === "CAPTCHA verified successfully! You can continue chatting.") {
+    messageEl.style.color = "#16a34a"; // Green text using inline style for success
+    messageEl.style.fontWeight = "600"; // Semibold
+  } else if (content === "Please verify you're human before continuing the conversation.") {
+    messageEl.style.color = "#dc2626"; // Red text using inline style
+    messageEl.style.fontWeight = "600"; // Semibold
+  }
+  
+  messageEl.className = baseClass;
+
+  // Process content to render tables properly
+  content = formatMessageContent(content);
+
+  messageEl.innerHTML = content;
+  messageEl.classList.add("opacity-0", "translate-y-4");
+  container.appendChild(messageEl);
+
+  requestAnimationFrame(() => {
+    messageEl.classList.remove("opacity-0", "translate-y-4");
+    messageEl.classList.add("opacity-100", "translate-y-0");
+  });
+
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: "smooth",
+  });
+}
+
+      function formatMessageContent(content) {
+        // Convert line breaks to <br>
+        content = content.replace(/\n/g, "<br>");
+
+        // Convert markdown tables to HTML tables
+        content = content.replace(
+          /\|\s*(.*?)\s*\|\s*(.*?)\s*\|/g,
+          '<table class="data-table"><tr><th>$1</th><td>$2</td></tr></table>'
+        );
+
+        return content;
+      }
+
+      function processDataForVisualization(query, response) {
+        // Hide previous chart if any
+        document.getElementById("dataVisual").classList.add("hidden");
+
+        // Check if the response contains vehicle registration data
+        const hasYearData = /\b20\d{2}\b.*?vehicles/.test(response);
+        const isDataQuery =
+          /(total|sum|registration|vehicle|trend|growth|year)/.test(
+            query.toLowerCase()
+          );
+
+        if (hasYearData && isDataQuery) {
+          // Extract year-vehicle pairs
+          const dataPoints = [];
+          const regex = /\b(20\d{2})\b.*?(\d{1,3}(?:,\d{3})*)\s*vehicles/g;
+          let match;
+
+          while ((match = regex.exec(response)) !== null) {
+            const year = match[1];
+            const vehicles = parseInt(match[2].replace(/,/g, ""));
+            dataPoints.push({ year, vehicles });
+          }
+
+          if (dataPoints.length > 1) {
+            renderChart(dataPoints);
+          }
+        }
+      }
+
+      function renderChart(dataPoints) {
+        // Sort dataPoints by year
+        dataPoints.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+
+        const years = dataPoints.map((point) => point.year);
+        const vehicles = dataPoints.map((point) => point.vehicles);
+
+        const ctx = document.getElementById("dataChart").getContext("2d");
+
+        // Destroy previous chart if exists
+        if (dataChart) {
+          dataChart.destroy();
+        }
+
+        // Create new chart
+        dataChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: years,
+            datasets: [
+              {
+                label: "Vehicle Registrations",
+                data: vehicles,
+                borderColor: "rgb(79, 70, 229)",
+                backgroundColor: "rgba(79, 70, 229, 0.1)",
+                borderWidth: 2,
+                tension: 0.2,
+                fill: true,
+                pointBackgroundColor: "rgb(99, 102, 241)",
+                pointRadius: 4,
+                pointHoverRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "Vehicle Registrations by Year",
+                font: {
+                  size: 16,
+                  weight: "bold",
+                },
+              },
+              legend: {
+                position: "top",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return `Vehicles: ${context.parsed.y.toLocaleString()}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function (value) {
+                    return value.toLocaleString();
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Show the chart container
+        document.getElementById("dataVisual").classList.remove("hidden");
+      }
+
+      // CAPTCHA Functions
+      function showCaptcha() {
+        // Hide input container and show captcha
+        document.getElementById('inputContainer').classList.add('hidden');
+        document.getElementById('captchaContainer').classList.remove('hidden');
+        
+        // Generate new captcha
+        generateCaptcha();
+      }
+
+      function generateCaptcha() {
+        const canvas = document.getElementById('captchaCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Clear canvas
+        ctx.fillStyle = '#f0f7ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Generate random captcha text (alphanumeric)
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        captchaText = '';
+        for (let i = 0; i < 6; i++) {
+          captchaText += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        // Draw the text with noise
+        ctx.font = 'bold 30px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw captcha text with random positions and rotations
+        for (let i = 0; i < captchaText.length; i++) {
+          const x = 50 + i * 40;
+          const y = 40 + Math.random() * 20 - 10;
+          const rotation = Math.random() * 0.4 - 0.2;
+          
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(rotation);
+          ctx.fillText(captchaText[i], 0, 0);
+          ctx.restore();
+        }
+        
+        // Add noise
+        for (let i = 0; i < 100; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.3)`;
+          ctx.fillRect(x, y, 2, 2);
+        }
+        
+        // Add some lines
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+          ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+          ctx.strokeStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.4)`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        
+        // Clear input field
+        document.getElementById('captchaInput').value = '';
+        document.getElementById('captchaInput').focus();
+      }
+
+      function refreshCaptcha() {
+  generateCaptcha();
+  // Focus on the input field after refreshing
+  setTimeout(() => {
+    document.getElementById('captchaInput').focus();
+  }, 100);
+}
+
+function verifyCaptcha() {
+  const input = document.getElementById('captchaInput').value.trim();
+  
+  if (input === captchaText) {
+    // Hide captcha and show input
+    document.getElementById('captchaContainer').classList.add('hidden');
+    document.getElementById('inputContainer').classList.remove('hidden');
+    
+    // Focus the input field
+    setTimeout(() => {
+      document.getElementById('messageInput').focus();
+    }, 100);
+
+    // Display a success message
+    appendMessage("assistant", "CAPTCHA verified successfully! You can continue chatting.");
+  } else {
+    // Show error and regenerate captcha
+    alert("Incorrect CAPTCHA! Please try again.");
+    generateCaptcha();
+  }
+}
+
+      // Create a star-shaped texture using canvas
+      function createStarTexture() {
+        const size = 64;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.translate(size / 2, size / 2);
+        ctx.beginPath();
+        const spikes = 5;
+        const outerRadius = 28;
+        const innerRadius = 12;
+        for (let i = 0; i < spikes * 2; i++) {
+          const radius = i % 2 === 0 ? outerRadius : innerRadius;
+          const angle = (i * Math.PI) / spikes;
+          ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+        ctx.closePath();
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      // Initialize Three.js background
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.getElementById("scene").appendChild(renderer.domElement);
+
+      const particles = new THREE.BufferGeometry();
+      const particleCount = 1500;
+      const posArray = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 20;
+      }
+
+      particles.setAttribute(
+        "position",
+        new THREE.BufferAttribute(posArray, 3)
+      );
+
+      const material = new THREE.PointsMaterial({
+        size: 0.2,
+        map: createStarTexture(),
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        vertexColors: false,
+      });
+
+      const particleMesh = new THREE.Points(particles, material);
+      scene.add(particleMesh);
+      camera.position.z = 8;
+
+      let hue = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const positions = particles.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+          positions[i] += Math.sin(Date.now() * 0.001 + i) * 0.002;
+          positions[i + 1] += Math.cos(Date.now() * 0.001 + i) * 0.002;
+        }
+        particles.attributes.position.needsUpdate = true;
+
+        hue = (hue + 0.3) % 360;
+        const rgb = new THREE.Color().setHSL(hue / 360, 0.8, 0.7);
+        material.color.set(rgb);
+
+        particleMesh.rotation.x += 0.0005;
+        particleMesh.rotation.y += 0.001;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Allow pressing Enter to send message
+      document
+        .getElementById("messageInput")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+
+      // Allow pressing Enter to submit captcha
+      document
+        .getElementById("captchaInput")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            verifyCaptcha();
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,126 @@
+{
+    "Original Data": [
+        {
+            "vehicles": 35699,
+            "year": "2000"
+        },
+        {
+            "vehicles": 39732,
+            "year": "2001"
+        },
+        {
+            "vehicles": 45212,
+            "year": "2002"
+        },
+        {
+            "vehicles": 44080,
+            "year": "2003"
+        },
+        {
+            "vehicles": 58539,
+            "year": "2004"
+        },
+        {
+            "vehicles": 65983,
+            "year": "2005"
+        },
+        {
+            "vehicles": 79443,
+            "year": "2006"
+        },
+        {
+            "vehicles": 97721,
+            "year": "2007"
+        },
+        {
+            "vehicles": 117929,
+            "year": "2008"
+        },
+        {
+            "vehicles": 122427,
+            "year": "2009"
+        },
+        {
+            "vehicles": 156827,
+            "year": "2010"
+        },
+        {
+            "vehicles": 180371,
+            "year": "2011"
+        },
+        {
+            "vehicles": 190293,
+            "year": "2012"
+        },
+        {
+            "vehicles": 144877,
+            "year": "2013"
+        },
+        {
+            "vehicles": 167782,
+            "year": "2014"
+        },
+        {
+            "vehicles": 161224,
+            "year": "2015"
+        },
+        {
+            "vehicles": 189632,
+            "year": "2016"
+        },
+        {
+            "vehicles": 200828,
+            "year": "2017"
+        },
+        {
+            "vehicles": 207177,
+            "year": "2018"
+        },
+        {
+            "vehicles": 178636,
+            "year": "2019"
+        },
+        {
+            "vehicles": 152003,
+            "year": "2020"
+        },
+        {
+            "vehicles": 135963,
+            "year": "2021"
+        },
+        {
+            "vehicles": 116496,
+            "year": "2022"
+        },
+        {
+            "vehicles": 117187,
+            "year": "2023"
+        },
+        {
+            "vehicles": 105749,
+            "year": "2024"
+        }
+    ],
+    "Predicted Data": [
+        {
+            "vehicles": 215201,
+            "year": "2025"
+        },
+        {
+            "vehicles": 223225,
+            "year": "2026"
+        },
+        {
+            "vehicles": 231250,
+            "year": "2027"
+        },
+        {
+            "vehicles": 239274,
+            "year": "2028"
+        },
+        {
+            "vehicles": 247299,
+            "year": "2029"
+        }
+    ]
+}

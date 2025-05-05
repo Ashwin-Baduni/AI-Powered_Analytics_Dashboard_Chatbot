@@ -1,6 +1,13 @@
-# 🚗 AI-Powered Vehicle Registration Data Assistant
+# AI-Powered Analytics Dashboard Chatbot
 
 An intelligent, data-driven assistant built to simplify vehicle registration queries, powered by cutting-edge AI and optimized for performance. 🚀
+
+## 📽 Sample Output
+
+![Gif Sample](https://github.com/Ashwin-Baduni/AI-Powered_Analytics_Dashboard_Chatbot/blob/main/2025-05-06.gif)
+
+[Link to full video](https://github.com/Ashwin-Baduni/AI-Powered_Analytics_Dashboard_Chatbot/blob/main/2025-05-06%2002-25-38.mkv)
+
 
 ## 🔑 Key Features
 
